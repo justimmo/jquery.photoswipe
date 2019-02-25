@@ -1,7 +1,7 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-/*! PhotoSwipe - v4.1.1 - 2015-12-24
+(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+/*! PhotoSwipe - v4.1.3 - 2019-01-08
 * http://photoswipe.com
-* Copyright (c) 2015 Dmitry Semenov; */
+* Copyright (c) 2019 Dmitry Semenov; */
 (function (root, factory) { 
 	if (typeof define === 'function' && define.amd) {
 		define(factory);
@@ -158,7 +158,7 @@ var framework = {
 			features.caf = window.cancelAnimationFrame;
 		}
 
-		features.pointerEvent = navigator.pointerEnabled || navigator.msPointerEnabled;
+		features.pointerEvent = !!(window.PointerEvent) || navigator.msPointerEnabled;
 
 		// fix false-positive detection of old Android in new IE
 		// (IE11 ua string contains "Android 4.0")
@@ -398,6 +398,8 @@ var _isOpen,
 	_features,
 	_windowVisibleSize = {},
 	_renderMaxResolution = false,
+	_orientationChangeTimeout,
+
 
 	// Registers PhotoSWipe module (History, Controller ...)
 	_registerModule = function(name, module) {
@@ -545,13 +547,13 @@ var _isOpen,
 			framework.bind(document, 'mousemove', _onFirstMouseMove);
 		}
 
-		framework.bind(window, 'resize scroll', self);
+		framework.bind(window, 'resize scroll orientationchange', self);
 
 		_shout('bindEvents');
 	},
 
 	_unbindEvents = function() {
-		framework.unbind(window, 'resize', self);
+		framework.unbind(window, 'resize scroll orientationchange', self);
 		framework.unbind(window, 'scroll', _globalEventHandlers.scroll);
 		framework.unbind(document, 'keydown', self);
 		framework.unbind(document, 'mousemove', _onFirstMouseMove);
@@ -563,6 +565,8 @@ var _isOpen,
 		if(_isDragging) {
 			framework.unbind(window, _upMoveEvents, self);
 		}
+
+		clearTimeout(_orientationChangeTimeout);
 
 		_shout('unbindEvents');
 	},
@@ -842,6 +846,18 @@ var publicMethods = {
 		// Setup global events
 		_globalEventHandlers = {
 			resize: self.updateSize,
+
+			// Fixes: iOS 10.3 resize event
+			// does not update scrollWrap.clientWidth instantly after resize
+			// https://github.com/dimsemenov/PhotoSwipe/issues/1315
+			orientationchange: function() {
+				clearTimeout(_orientationChangeTimeout);
+				_orientationChangeTimeout = setTimeout(function() {
+					if(_viewportSize.x !== self.scrollWrap.clientWidth) {
+						self.updateSize();
+					}
+				}, 500);
+			},
 			scroll: _updatePageScrollOffset,
 			keydown: _onKeyDown,
 			click: _onGlobalClick
@@ -1972,9 +1988,7 @@ var _gestureStartTime,
 			if(pointerIndex > -1) {
 				releasePoint = _currPointers.splice(pointerIndex, 1)[0];
 
-				if(navigator.pointerEnabled) {
-					releasePoint.type = e.pointerType || 'mouse';
-				} else {
+				if(navigator.msPointerEnabled) {
 					var MSPOINTER_TYPES = {
 						4: 'mouse', // event.MSPOINTER_TYPE_MOUSE
 						2: 'touch', // event.MSPOINTER_TYPE_TOUCH 
@@ -1985,6 +1999,8 @@ var _gestureStartTime,
 					if(!releasePoint.type) {
 						releasePoint.type = e.pointerType || 'mouse';
 					}
+				} else {
+					releasePoint.type = e.pointerType || 'mouse';
 				}
 
 			}
@@ -2437,11 +2453,11 @@ _registerModule('Gestures', {
 			}
 
 			if(_pointerEventEnabled) {
-				if(navigator.pointerEnabled) {
-					addEventNames('pointer', 'down', 'move', 'up', 'cancel');
-				} else {
+				if(navigator.msPointerEnabled) {
 					// IE10 pointer events are case-sensitive
 					addEventNames('MSPointer', 'Down', 'Move', 'Up', 'Cancel');
+				} else {
+					addEventNames('pointer', 'down', 'move', 'up', 'cancel');
 				}
 			} else if(_features.touch) {
 				addEventNames('touch', 'start', 'move', 'end', 'cancel');
@@ -3736,8 +3752,14 @@ var _photoswipeUiDefault2 = _interopRequireDefault(_photoswipeUiDefault);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function PhotoSwipeMounter($) {
-    var $defaultGallery = $('<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true"><div class="pswp__bg"></div><div class="pswp__scroll-wrap"><div class="pswp__container"><div class="pswp__item"></div><div class="pswp__item"></div><div class="pswp__item"></div></div><div class="pswp__ui pswp__ui--hidden"><div class="pswp__top-bar"><div class="pswp__counter"></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button> <button class="pswp__button pswp__button--share" title="Share"></button> <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button> <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class="pswp__preloader"><div class="pswp__preloader__icn"><div class="pswp__preloader__cut"><div class="pswp__preloader__donut"></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class="pswp__share-tooltip"></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)"></button> <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class="pswp__caption"><div class="pswp__caption__center"></div></div></div></div></div>').appendTo('body'),
+    var $defaultGallery = $('<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true"><div class="pswp__bg"></div><div class="pswp__scroll-wrap"><div class="pswp__container"><div class="pswp__item"></div><div class="pswp__item"></div><div class="pswp__item"></div></div><div class="pswp__ui pswp__ui--hidden"><div class="pswp__top-bar"><div class="pswp__counter"></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button> <button class="pswp__button pswp__button--share" title="Share"></button> <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button> <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class="pswp__preloader"><div class="pswp__preloader__icn"><div class="pswp__preloader__cut"><div class="pswp__preloader__donut"></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class="pswp__share-tooltip"></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)"></button> <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class="pswp__caption"><div class="pswp__caption__center"></div></div></div></div></div>'),
         uid = 1;
+
+    if ($('.pswp').length) {
+        $defaultGallery = $('.pswp').first();
+    } else {
+        $defaultGallery.appendTo('body');
+    }
 
     function getImgs($gallery) {
         var slideSelector = getOptions($gallery).slideSelector;
@@ -3923,16 +3945,14 @@ function PhotoSwipeMounter($) {
         // Parse URL and open gallery if it contains #&pid=3&gid=1
         var hashData = photoswipeParseHash();
         if (hashData.pid && hashData.gid) {
-            (function () {
-                var $gallery = $galleries[hashData.gid - 1],
-                    pid = hashData.pid - 1,
-                    $imgs = getImgs($gallery),
-                    imgInfoArrayPromise = getImgInfoArray($imgs);
+            var $gallery = $galleries[hashData.gid - 1],
+                pid = hashData.pid - 1,
+                $imgs = getImgs($gallery),
+                imgInfoArrayPromise = getImgInfoArray($imgs);
 
-                imgInfoArrayPromise.done(function (imgInfoArray) {
-                    openPhotoSwipe(pid, $gallery, $imgs, imgInfoArray);
-                });
-            })();
+            imgInfoArrayPromise.done(function (imgInfoArray) {
+                openPhotoSwipe(pid, $gallery, $imgs, imgInfoArray);
+            });
         }
     }
 
