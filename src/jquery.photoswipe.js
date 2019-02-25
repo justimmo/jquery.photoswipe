@@ -7,11 +7,13 @@ function PhotoSwipeMounter($) {
         ,
         uid             = 1;
 
-    if ($('.pswp').length) {
-        $defaultGallery = $('.pswp').first();
-    } else {
-        $defaultGallery.appendTo('body')
-    }
+    $(document).ready(function() {
+        if ($('.pswp').length) {
+            $defaultGallery = $('.pswp').first();
+        } else {
+            $defaultGallery.appendTo('body')
+        }
+    });
 
     function getImgs($gallery) {
         var slideSelector = getOptions($gallery).slideSelector;
