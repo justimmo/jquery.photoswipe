@@ -50,14 +50,10 @@ function PhotoSwipeMounter($) {
 
     function getWH(wh, $img) {
         var d            = $.Deferred(),
-            wh_value     = $img.data(`original-src-${wh}`),
-            original_src = decodeURI($img.data('original-src') || $img.attr('src')),
-            matches      = original_src.match(/(\d+)[*×x](\d+)/);
+            wh_value     = $img.data(`original-src-${wh}`);
 
         if (wh_value) {
             d.resolve(wh_value);
-        } else if (matches !== null) {
-            d.resolve(matches[(wh === 'width' ? 1 : 2)]);
         } else {
             $(`<img>`).on('load', function () {
                 d.resolve(this[wh]);
